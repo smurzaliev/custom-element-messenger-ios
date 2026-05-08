@@ -93,6 +93,30 @@ class AppRouteURLParserTests: XCTestCase {
         XCTAssertEqual(route, .room(roomID: id, via: []))
     }
     
+    func testUCMatrixUserURL() {
+        let userID = "@test:matrix.org"
+        guard let url = URL(string: "https://ucmatrix.org/#/\(userID)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .userProfile(userID: userID))
+    }
+
+    func testUCMatrixRoomIdentifierURL() {
+        let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
+        guard let url = URL(string: "https://ucmatrix.org/#/\(id)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .room(roomID: id, via: []))
+    }
+
     func testWebRoomIDURL() {
         // UCMeet has no web client hosts configured, so Element web URLs should not be parsed
         let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
