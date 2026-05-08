@@ -25,30 +25,40 @@ check_url() {
     echo "URL: $url"
 
     local headers
-    headers=$(curl -sI "$url") || { red "  ОШИБКА: curl упал"; fail=$((fail+1)); return; }
+    headers=$(curl -sI "$url") || { red "  ОШИБКА: curl упал (нет сети или DNS)"; fail=$((fail+1)); return; }
 
     local status
     status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
     local content_type
     content_type=$(printf '%s' "$headers" | grep -i '^content-type:' | head -1 | sed 's/^[Cc]ontent-[Tt]ype:[[:space:]]*//' | tr -d '\r')
 
+    local local_failed=0
+
     if [[ "$status" == "200" ]]; then
         green "  HTTP 200 OK"
     else
         red "  ОШИБКА: HTTP $status (ожидается 200)"
-        fail=$((fail+1))
+        local_failed=1
     fi
 
     if [[ "$content_type" == application/json* ]]; then
         green "  Content-Type: $content_type"
     else
         red "  ОШИБКА: Content-Type = '$content_type' (ожидается application/json)"
-        fail=$((fail+1))
+        local_failed=1
     fi
 
     if printf '%s' "$headers" | grep -qi '^location:'; then
         red "  ОШИБКА: Найден редирект (Location header). Apple/Google молча отбросят файл."
-        fail=$((fail+1))
+        local_failed=1
+    fi
+
+    # При ошибке — печатаем сырые заголовки, чтобы ops мог быстро разобраться
+    if [[ $local_failed -ne 0 ]]; then
+        yellow "  --- Сырые заголовки ответа ---"
+        printf '%s\n' "$headers" | sed 's/^/    /'
+        yellow "  ------------------------------"
+        fail=$((fail+local_failed))
     fi
 }
 
