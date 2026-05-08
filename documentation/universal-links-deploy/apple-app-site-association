@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6HRG779SDK.org.ucmeet.UCMeetChat"],
+        "components": [
+          {
+            "/": "/*",
+            "comment": "All paths on ucmatrix.org are handled by UCMeet.Chat iOS app"
+          }
+        ]
+      }
+    ]
+  }
+}
