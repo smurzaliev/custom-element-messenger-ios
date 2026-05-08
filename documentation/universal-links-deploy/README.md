@@ -12,11 +12,14 @@
 
 | Файл | Назначение | Что с ним делать |
 |---|---|---|
-| `apple-app-site-association` | Манифест для iOS (готов, не требует правки) | Залить как есть |
-| `assetlinks.json.template` | Шаблон манифеста для Android | Заменить два значения, переименовать в `assetlinks.json`, залить |
-| `nginx-snippet.conf` | Пример конфигурации nginx | Адаптировать под вашу конфигурацию |
+| `apple-app-site-association` | Манифест для iOS (готов) | Залить как есть |
+| `assetlinks.json` | Манифест для Android (готов, заполнен данными от Android-команды) | Залить как есть. **Внимание:** содержит DEBUG SHA-256 — после публикации в Google Play файл нужно будет перевыпустить с production-ключом (см. ниже) |
+| `nginx-snippet.conf` | Пример конфигурации веб-сервера (nginx + Apache + Caddy + S3) | Адаптировать под вашу конфигурацию |
 | `verify.sh` | Скрипт проверки после деплоя | Запустить, убедиться что всё ОК |
 | `README.md` | Этот файл | — |
+
+> ⚠️ **Важно про Android SHA-256.**
+> В текущей версии `assetlinks.json` указан DEBUG-сертификат Android-приложения — этого достаточно для тестирования и для сборок, которые ставятся напрямую (не через Google Play). После того как Android-приложение будет опубликовано в Google Play, Play App Signing **перевыпускает ключ**, и SHA-256 у установленного из стора приложения будет другим. В этот момент Android-разработчик пришлёт новый `assetlinks.json` с production-fingerprint из Play Console (App Signing → "App signing key certificate"), и его нужно будет залить вместо текущего файла. До этого момента App Links будут работать только для билдов, подписанных текущим debug-ключом.
 
 ---
 
@@ -38,17 +41,21 @@
 
 ---
 
-## Шаг 2. Заполнить и развернуть Android-файл
+## Шаг 2. Развернуть Android-файл
 
 **Целевой URL:** `https://ucmatrix.org/.well-known/assetlinks.json`
 
-1. Скопировать `assetlinks.json.template` → `assetlinks.json`.
-2. Заменить два значения, которые пришлёт Android-разработчик UCMeet.Chat:
-   - `REPLACE_WITH_ANDROID_PACKAGE_NAME` → package name Android-приложения, например `org.ucmeet.UCMeetChat`.
-   - `REPLACE_WITH_RELEASE_KEYSTORE_SHA256` → SHA-256 fingerprint **релизного** keystore (не debug). Формат: `AB:CD:EF:01:23:...` (64 hex-пары через двоеточие).
-3. Залить итоговый `assetlinks.json` на сервер.
+Файл `assetlinks.json` из этого пакета залить **как есть**. Он уже заполнен данными от Android-команды:
+
+| Поле | Значение |
+|---|---|
+| `package_name` | `org.ucmeet.chat` |
+| `sha256_cert_fingerprints[0]` | `B0:B0:51:DC:56:5C:81:2F:E1:7F:6F:3E:94:5B:4D:79:04:71:23:AB:0D:A6:12:86:76:9E:B2:94:91:97:13:0E` (DEBUG) |
 
 **Требования Google такие же, как у Apple** (HTTPS, 200 OK, `application/json`, без редиректов). Расширение `.json` здесь обязательно.
+
+> 🔁 **Этот файл нужно будет обновить один раз после публикации в Google Play.**
+> Текущий fingerprint — debug-ключа. После публикации Play App Signing назначит новый ключ, и Android-разработчик пришлёт обновлённый `assetlinks.json` с production SHA-256 из Play Console. Замена — перезалить файл по тому же URL. App Links на устройствах активируются автоматически после следующего обновления приложения из стора (Google Play периодически перепроверяет `assetlinks.json`).
 
 ---
 
@@ -131,8 +138,10 @@ content-type: application/json
 | iOS App ID | `6HRG779SDK.org.ucmeet.UCMeetChat` |
 | iOS Bundle ID | `org.ucmeet.UCMeetChat` |
 | iOS Team ID | `6HRG779SDK` |
-| Android package | `<заполняется Android-разработчиком>` |
-| Android SHA-256 | `<заполняется Android-разработчиком>` |
+| Android package | `org.ucmeet.chat` |
+| Android SHA-256 | `B0:B0:...:13:0E` (DEBUG, заменить после публикации в Google Play) |
+| Android фрейм | `element-hq/element-x-android` (форк) |
+| Android `autoVerify` | Настроен (подтверждено разработчиком 2026-05-08) |
 | Контакт по iOS | Самат Мурзалиев |
 
 При смене Bundle ID, Team ID, или релизного keystore Android — перевыпустить пакет.

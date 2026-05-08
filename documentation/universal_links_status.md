@@ -26,10 +26,10 @@ iOS code is **complete and pushed** to `origin/feature/universal-links-ucmatrix`
 | Russian-language implementation plan | ✅ Done — `documentation/deeplink-univeral-link.md` |
 | Deploy bundle for customer ops | ✅ Done — `documentation/universal-links-deploy/` (5 files) |
 | Zip bundle for delivery | ✅ Done — `~/Desktop/universal-links-deploy.zip` |
-| Russian message to Android dev | ✅ Drafted — content in this document, §"Pending #1" |
-| Android dev replies with package + SHA-256 | ⏳ Pending — owner: Android dev |
-| `assetlinks.json` filled with real values | ⏳ Blocked on Android reply |
-| Customer ops deploys AASA + assetlinks | ⏳ Blocked on complete bundle |
+| Russian message to Android dev | ✅ Sent |
+| Android dev replies with package + SHA-256 | ✅ Received 2026-05-08 (DEBUG fingerprint) |
+| `assetlinks.json` filled with real values | ✅ Done (DEBUG-only, see §"Android post-Play follow-up") |
+| Customer ops deploys AASA + assetlinks | 🟢 Ready to send — `~/Desktop/universal-links-deploy.zip` |
 | New TestFlight build with new entitlement | 🟡 Ready to upload, hold device install until AASA live |
 | End-to-end test (tap link → app opens room) | ⏳ Blocked on AASA being live |
 | PR `feature/universal-links-ucmatrix` → `develop` | ⏳ Hold until E2E verified |
@@ -59,35 +59,51 @@ No new abstractions were introduced. The new code path reuses three pre-existing
 
 ## What is pending and why
 
-### Pending #1 — Android dev: provide package name + release SHA-256 fingerprint
+### Pending #1 — Android dev reply ✅ RECEIVED 2026-05-08
 
-**Owner:** Android developer of the UCMeet.Chat Android fork.
+**Status:** Closed. Values used in `assetlinks.json`:
 
-**What we need:**
-1. Android `applicationId` from release build.gradle (e.g. `org.ucmeet.UCMeetChat`).
-2. SHA-256 fingerprint of the **release** keystore (not debug). 64 hex pairs separated by colons. Extracted via:
-   ```
-   keytool -list -v -keystore путь/к/release.keystore -alias <alias>
-   ```
-3. Context answers (which Matrix Android fork — `element-android` vs `element-x-android`; whether autoVerify is configured; whether Google Play App Signing is in use).
+| Field | Value | Notes |
+|---|---|---|
+| `package_name` | `org.ucmeet.chat` | Lowercase per Android convention; differs from iOS bundle |
+| `sha256_cert_fingerprints[0]` | `B0:B0:51:DC:56:5C:81:2F:E1:7F:6F:3E:94:5B:4D:79:04:71:23:AB:0D:A6:12:86:76:9E:B2:94:91:97:13:0E` | **DEBUG key** — see post-Play follow-up below |
+| Fork | `element-hq/element-x-android` | Same as iOS — relevant for matrix.to → ucmatrix.org parser symmetry |
+| `autoVerify` | Configured | Android dev confirmed |
+| Google Play App Signing | Will rewrite the key on publication — production SHA-256 will be different |
 
-**Russian message to send (already drafted, ready to copy/paste):** see §"Russian message to Android dev" at the end of this document.
+### Pending #1a — Android post-Play follow-up
 
-**Without these values:** `assetlinks.json` cannot be finalized. The customer's `ucmatrix.org` server will not be able to authorize the Android app for App Links verification.
+**Owner:** Android developer.
+
+**What:** After Android UCMeet.Chat is published in Google Play, send an updated `assetlinks.json` containing the **App Signing key certificate** SHA-256 from Play Console (App Signing → "App signing key certificate"). Customer ops re-deploys the file under the same URL.
+
+**Why it matters:** Until this is done, App Links work only for builds signed with the current debug key (i.e., direct sideloads, not Google Play installs). Production users tap a link → opens in browser, not the app.
+
+**No action on iOS side.**
+
+### Pending #1b — Android matrix.to → ucmatrix.org parser symmetry
+
+**Owner:** Android developer.
+
+**What:** Confirm that the Android app parses `https://ucmatrix.org/...` permalinks (not just `matrix.to`). On iOS we added `UCMatrixPermalinkParser` (rewrites host before delegating to the SDK parser). Android's `element-x-android` fork likely needs the same treatment, otherwise even with App Links activating, the app will receive a `ucmatrix.org` URL and discard it.
+
+**Recommended message to Android dev** (next conversation):
+
+> Уточнение: на iOS, помимо entitlement и AASA, нам пришлось добавить в код приложения парсер, который при получении `https://ucmatrix.org/...` ссылок переписывает хост на `matrix.to` перед тем, как отдать SDK-парсеру (`UCMatrixPermalinkParser`). Иначе SDK не распознавал `ucmatrix.org` как валидный Matrix-permalink. Проверь, что у тебя на Android аналогично — если приложение парсит только `matrix.to`, то даже после активации App Links тапы по `ucmatrix.org`-ссылкам не приведут к навигации внутри приложения. Шаблон правки: интерсептор перед SDK permalink-парсером, который меняет хост `ucmatrix.org` → `matrix.to`.
 
 ### Pending #2 — Customer ops: deploy AASA + assetlinks.json on `ucmatrix.org`
 
 **Owner:** Customer's ops/devops team (the team that maintains `ucmatrix.org`).
 
-**Deliverable to send them:** `~/Desktop/universal-links-deploy.zip` (6.7 KB), generated from `documentation/universal-links-deploy/`.
+**Deliverable to send them:** `~/Desktop/universal-links-deploy.zip` (refreshed 2026-05-08, contains the filled `assetlinks.json`).
 
 **What they do:** unzip, follow `README.md` inside (in Russian). Result must be:
 - `https://ucmatrix.org/.well-known/apple-app-site-association` returns `200 OK` with `Content-Type: application/json`, contents include `appIDs: ["6HRG779SDK.org.ucmeet.UCMeetChat"]`.
-- `https://ucmatrix.org/.well-known/assetlinks.json` returns `200 OK` with `Content-Type: application/json`, contents include the Android package name + SHA-256.
+- `https://ucmatrix.org/.well-known/assetlinks.json` returns `200 OK` with `Content-Type: application/json`, contents include `package_name: "org.ucmeet.chat"` + SHA-256.
 
 **Confirmation:** they run `bash verify.sh` from the unzipped folder; it passes with no red errors.
 
-**Sequencing:** do **not** send the zip to ops until pending #1 is resolved (otherwise they'll deploy an `assetlinks.json` with placeholder strings and Android Universal Links will silently fail). Exception: if Android dev is going to be slow (>1 week), we can split into iOS-only deploy first. See §"Sequencing alternatives".
+**Sequencing:** zip is now ready. The post-Play `assetlinks.json` update (Pending #1a) is a one-time follow-up later — does not block this deploy.
 
 ### Pending #3 — TestFlight build (1.0.2 / build 6) and end-to-end verification
 
@@ -119,13 +135,7 @@ No new abstractions were introduced. The new code path reuses three pre-existing
 
 ## Sequencing alternatives
 
-The default plan above assumes Android dev replies within ~1 week. If that's not the case, consider:
-
-| Scenario | Action |
-|---|---|
-| Android dev replies within 1 week | Default plan: wait, fill `assetlinks.json`, single hand-off to ops |
-| Android dev unavailable / slow | Split deploy: send ops an **iOS-only** zip (without `assetlinks.json.template`) so iOS Universal Links can roll out independently. Send Android `assetlinks.json` later as a follow-up. iOS does not depend on Android being ready. |
-| Customer ops is slow | iOS code stays merged on the feature branch until ops is ready. No urgency. |
+No longer relevant — Android dev replied 2026-05-08, deploy package is complete.
 
 ---
 

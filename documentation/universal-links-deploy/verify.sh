@@ -9,6 +9,7 @@ set -u
 
 DOMAIN="ucmatrix.org"
 EXPECTED_APP_ID="6HRG779SDK.org.ucmeet.UCMeetChat"
+EXPECTED_ANDROID_PACKAGE="org.ucmeet.chat"
 
 red()    { printf "\033[31m%s\033[0m\n" "$*"; }
 green()  { printf "\033[32m%s\033[0m\n" "$*"; }
@@ -76,12 +77,24 @@ fi
 
 check_url "https://$DOMAIN/.well-known/assetlinks.json" "Android — assetlinks.json"
 
-# Содержимое assetlinks: проверяем заглушки
+# Содержимое assetlinks: проверяем package и наличие SHA-256
 header "Android — содержимое assetlinks.json"
 android_body=$(curl -s "https://$DOMAIN/.well-known/assetlinks.json")
+if printf '%s' "$android_body" | grep -q "\"$EXPECTED_ANDROID_PACKAGE\""; then
+    green "  package_name '$EXPECTED_ANDROID_PACKAGE' присутствует"
+else
+    red "  ОШИБКА: package_name '$EXPECTED_ANDROID_PACKAGE' не найден в assetlinks.json"
+    fail=$((fail+1))
+fi
+if printf '%s' "$android_body" | grep -qE '[0-9A-F]{2}(:[0-9A-F]{2}){31}'; then
+    green "  SHA-256 fingerprint присутствует (формат корректен)"
+else
+    red "  ОШИБКА: SHA-256 fingerprint не найден или неправильный формат"
+    fail=$((fail+1))
+fi
 if printf '%s' "$android_body" | grep -q "REPLACE_WITH_"; then
     yellow "  ВНИМАНИЕ: в assetlinks.json остались заглушки REPLACE_WITH_..."
-    yellow "  Android-разработчик должен прислать package_name и SHA-256 fingerprint."
+    fail=$((fail+1))
 fi
 
 header "Внешний валидатор Apple"
