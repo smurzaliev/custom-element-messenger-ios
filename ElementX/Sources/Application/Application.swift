@@ -60,6 +60,10 @@ struct Application: App {
                     // but calls from Recents still send it ¯\_(ツ)_/¯
                     appCoordinator.handleUserActivity(userActivity)
                 }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                    guard let url = userActivity.webpageURL else { return }
+                    openURL(url, isExternalURL: true)
+                }
                 .task {
                     appCoordinator.start()
                 }
