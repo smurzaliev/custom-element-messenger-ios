@@ -117,6 +117,120 @@ class AppRouteURLParserTests: XCTestCase {
         XCTAssertEqual(route, .room(roomID: id, via: []))
     }
 
+    // MARK: - Additional ucmatrix.org permalink shapes
+
+    func testUCMatrixRoomAliasURL() {
+        // Room aliases use URL-encoded `%23` for the `#` prefix.
+        let alias = "#general:matrix.org"
+        guard let url = URL(string: "https://ucmatrix.org/#/%23general:matrix.org") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .roomAlias(alias))
+    }
+
+    func testUCMatrixEventOnRoomURL() {
+        let roomID = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
+        let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
+        guard let url = URL(string: "https://ucmatrix.org/#/\(roomID)/\(eventID)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .event(eventID: eventID, roomID: roomID, via: []))
+    }
+
+    func testUCMatrixEventOnRoomAliasURL() {
+        // Event-on-alias canonical form keeps `#` literal (matches SDK PermalinkTests:50-53).
+        let alias = "#general:matrix.org"
+        let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
+        guard let url = URL(string: "https://ucmatrix.org/#/#general:matrix.org/\(eventID)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .eventOnRoomAlias(eventID: eventID, alias: alias))
+    }
+
+    func testUCMatrixRoomURLWithViaParameters() {
+        let id = "!roomidentifier:matrix.org"
+        guard let url = URL(string: "https://ucmatrix.org/#/\(id)?via=server1.org&via=server2.org") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let route = appRouteURLParser.route(from: url)
+
+        XCTAssertEqual(route, .room(roomID: id, via: ["server1.org", "server2.org"]))
+    }
+
+    // MARK: - Round-trip symmetry: outgoing URL.replacingMatrixToHost() ↔ inbound parser
+    // Locks in the contract that any matrix.to permalink we rewrite for sharing
+    // (URL.swift:replacingMatrixToHost) parses back to the same AppRoute when an
+    // incoming Universal Link delivers it. If these two paths ever drift,
+    // share-link round-trips silently break.
+
+    func testRoundTripRoomURL() {
+        let roomID = "!abcdef:matrix.org"
+        guard let matrixToURL = URL(string: "https://matrix.to/#/\(roomID)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
+        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .room(roomID: roomID, via: []))
+    }
+
+    func testRoundTripUserURL() {
+        let userID = "@alice:matrix.org"
+        guard let matrixToURL = URL(string: "https://matrix.to/#/\(userID)") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
+        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .userProfile(userID: userID))
+    }
+
+    func testRoundTripRoomAliasURL() {
+        let alias = "#general:matrix.org"
+        guard let matrixToURL = URL(string: "https://matrix.to/#/%23general:matrix.org") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
+        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .roomAlias(alias))
+    }
+
+    func testRoundTripEventOnRoomURL() {
+        let roomID = "!abcdef:matrix.org"
+        let eventID = "$xyz123"
+        guard let matrixToURL = URL(string: "https://matrix.to/#/\(roomID)/\(eventID)?via=server.org") else {
+            XCTFail("Invalid url")
+            return
+        }
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
+        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL),
+                       .event(eventID: eventID, roomID: roomID, via: ["server.org"]))
+    }
+
     func testWebRoomIDURL() {
         // UCMeet has no web client hosts configured, so Element web URLs should not be parsed
         let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
