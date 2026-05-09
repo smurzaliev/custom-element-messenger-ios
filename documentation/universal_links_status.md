@@ -187,15 +187,37 @@ Copy-paste verbatim:
 
 Three layers, in order of practical value:
 
-1. **Unit tests** (already passing) — prove `https://ucmatrix.org/#/<roomID>` and `/<userID>` parse to correct `AppRoute`. This covers all our iOS-side logic.
-2. **LLDB injection on a real device or simulator** — pause the running app, in the LLDB prompt:
-   ```
-   expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/#/!roomid:matrix.ucmeet.org")!, isExternalURL: true)
-   ```
-   Bypasses iOS Universal Links delivery, exercises the whole route-and-navigate path.
+1. **Unit tests** (already passing) — `AppRouteURLParserTests` covers all five Matrix permalink shapes (room by ID, room alias, user, event-on-room, event-on-alias) for both `matrix.to` and `ucmatrix.org` hosts, plus `?via=` parameters and the bidirectional symmetry between `URL.replacingMatrixToHost()` (outgoing) and `UCMatrixPermalinkParser` (inbound).
+2. **LLDB injection on a real device or simulator** — see the manual smoke-test checklist below. Bypasses iOS Universal Links delivery, exercises the whole route-and-navigate path.
 3. **Stand-in AASA on a domain we control** — only worth it if we want to verify "tap in Telegram → app opens" without the customer's server. Cost: ~1 hour to host AASA on GitHub Pages / Cloudflare Pages, point entitlement at it temporarily, build TestFlight, test, revert. Skip unless we suspect a specific bug.
 
 The simulator does **not** honor Universal Links AASA verification (`xcrun simctl openurl` opens in mobile Safari, doesn't route through our app). Full E2E requires a real device + a real AASA-serving domain.
+
+---
+
+## Manual smoke-test checklist (LLDB injection)
+
+Use these commands to verify each canonical permalink shape navigates correctly **without** waiting for AASA deployment. Pre-condition: app is running in a debug build on a simulator or real device, user is logged in, and the test room/user exists on the homeserver.
+
+**How to use:**
+1. Run UCMeet.Chat from Xcode (Cmd-R).
+2. Pause the debugger anywhere (e.g., set a breakpoint or hit Cmd-Ctrl-Y).
+3. Paste the relevant command into the LLDB console (the `(lldb)` prompt at the bottom of Xcode).
+4. Hit Enter, resume execution. App should navigate as described.
+
+| Shape | LLDB command | Expected outcome |
+|---|---|---|
+| Room by ID | `expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/#/!roomid:matrix.ucmeet.org")!, isExternalURL: true)` | App opens the specified room |
+| Room alias | `expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/#/%23general:matrix.ucmeet.org")!, isExternalURL: true)` | App resolves alias and opens the room |
+| User profile | `expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/#/@alice:matrix.ucmeet.org")!, isExternalURL: true)` | App opens the user profile screen |
+| Event in room | `expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/#/!roomid:matrix.ucmeet.org/$eventid")!, isExternalURL: true)` | App opens the room scrolled to that message |
+| Unrecognised URL | `expression -l swift -- ((UIApplication.shared.delegate as! AppDelegate).appCoordinator as! AppCoordinator).handleDeepLink(URL(string: "https://ucmatrix.org/random/garbage")!, isExternalURL: true)` | Returns `false`. Console.app should show: `Deep link not recognised, falling back to system browser: ...` |
+
+**Substitute real IDs/aliases from the test homeserver before running.** The fictional values above won't resolve.
+
+**Verifying logs after each invocation:** open Console.app, filter by process `UCMeet.Chat`. Expect to see one of:
+- `Universal Link received: https://...` (from `Application.swift`'s `BrowsingWeb` modifier — only fires on real Universal Link delivery, not LLDB injection)
+- `Deep link not recognised, falling back to system browser: ...` (when the URL doesn't match any AppRoute — proves the new diagnostic log works).
 
 ---
 
