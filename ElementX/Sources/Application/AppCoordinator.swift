@@ -297,10 +297,11 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
             
             return true
         }
-        
+
+        MXLog.info("Deep link not recognised, falling back to system browser: \(url.absoluteString)")
         return false
     }
-    
+
     func handleUserActivity(_ userActivity: NSUserActivity) {
         // `INStartVideoCallIntent` is to be replaced with `INStartCallIntent`
         // but calls from Recents still send it ¯\_(ツ)_/¯

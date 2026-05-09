@@ -61,7 +61,11 @@ struct Application: App {
                     appCoordinator.handleUserActivity(userActivity)
                 }
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
-                    guard let url = userActivity.webpageURL else { return }
+                    guard let url = userActivity.webpageURL else {
+                        MXLog.warning("Received BrowsingWeb activity with no webpageURL")
+                        return
+                    }
+                    MXLog.info("Universal Link received: \(url)")
                     openURL(url, isExternalURL: true)
                 }
                 .task {
