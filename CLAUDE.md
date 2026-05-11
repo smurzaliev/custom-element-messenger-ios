@@ -23,9 +23,9 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 **Developer:** Saidakhror Murzaliev (solo, 20h/week, AI-assisted)
 **Customer:** Russian-speaking, existing Matrix infrastructure
 
-## Current State (as of 2026-04-05)
+## Current State (as of 2026-05-11)
 
-**App Store submission imminent.** ASC listing complete except screenshots (expected from customer). Push E2E verified on TestFlight. CallKit deferred to next sprint (Element Call widget issue). AGPL confirmation expected after upcoming call. Sprint 6 (TestFlight & Publication) in progress.
+**Live on App Store: 1.0.1.** TestFlight: 1.0.2 (build 1) uploaded 2026-05-11 — first build that includes upstream sync (SDK 26.05.06, OAuth rename, voice-only DM call, Live Location Sharing, multi-window) + Universal Links code (`applinks:ucmatrix.org` entitlement, `NSUserActivityTypeBrowsingWeb` handler). Smoke-tested on iPhone 17 Pro / iOS 26.4.1 simulator. Awaiting (a) customer ops to deploy AASA at `ucmatrix.org/.well-known/` for Universal Links E2E, (b) Apple TestFlight processing + customer test, (c) submission to App Store review.
 
 ### Configuration Applied
 
@@ -38,7 +38,7 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 | Homeserver | `matrix.ucmeet.org` |
 | Push Gateway | `https://push.ucmeet.org` (Sygnal, `type: apns`). App uses direct APNs tokens (not Firebase) |
 | Push Provider | `.apns` (switched from `.firebase` — Sygnal's GCM pushkin incompatible with APNs payload format) |
-| OIDC | Custom URL scheme `org.ucmeet.UCMeetChat:/callback` — login verified working |
+| OAuth (formerly OIDC) | Custom URL scheme `org.ucmeet.UCMeetChat:/callback` — login verified working post-sync 2026-05-11. **Important:** `oAuthConfiguration.clientURI` MUST stay hardcoded at `https://ucmeet.org` (NOT `websiteURL` = `www.ucmeet.info`) so the redirect-scheme reverse-DNS subdomain check in MAS passes. See `AppSettings.swift` comment for details — regression introduced and fixed during the 2026-05-10 sync. |
 | Calls | URL scheme `org.ucmeet.call`, LiveKit via `.well-known` |
 | Locales | en, en-US, ru (trimmed from 37) |
 | Accent Color | Dark navy blue #003B5D (Compound design tokens overridden — all green→navy blue) |
@@ -52,7 +52,15 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 | APP_NAME | `UCMeet.Chat` (was `ElementX` — fixed OIDC system dialog) |
 | Permalinks | `ucmatrix.org` (replaced `matrix.to` — blocked in Russia). Outgoing links, mentions, share URLs all use `ucmatrix.org`. Incoming `ucmatrix.org` links parsed via `UCMatrixPermalinkParser` |
 | Universal Links | `applinks:ucmatrix.org` in entitlements. `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` routes `https://ucmatrix.org/...` URLs through `AppCoordinator.handleDeepLink`. Requires AASA file at `https://ucmatrix.org/.well-known/apple-app-site-association` (customer-hosted) |
-| Upstream | Synced with `element-hq/element-x-ios:develop` (60 ahead, 0 behind) |
+| Upstream | Synced with `element-hq/element-x-ios:release/26.05.0` 2026-05-10 (3 ahead of release tag, 0 behind) |
+
+### Version 1.0.2 Build 1 Changes (2026-05-11) — currently in TestFlight
+
+1. **Upstream sync to `release/26.05.0`** (267 commits). Customer-facing: voice/video call menu in DM rooms (the customer's "кнопка звонка" ask), Live Location Sharing graduated to permanent, multi-window iPad/Mac, iOS 26 cold-start crash fix. Internal: Matrix Rust SDK 26.03.10 → 26.05.06, OIDC → OAuth rename, Compound design tokens v7 → v10.1.1, Embedded Element Call 0.17.0 → 0.19.2, Xcode bumped to 26.4 (we run 26.4.1).
+2. **Universal Links for `ucmatrix.org`** — `applinks:ucmatrix.org` entitlement + `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` + diagnostic logs in `AppCoordinator.handleDeepLink`. Tap `https://ucmatrix.org/#/room/...` opens the app once customer ops deploys AASA.
+3. **OAuth `clientURI` regression fix** (commit `3939e2cc5`) — reverted the `oAuthConfiguration` URI fields back to hardcoded `https://ucmeet.org`. The sync's "cleanup" to `websiteURL` broke MAS native-app policy. See `AppSettings.swift` for the explanation comment.
+4. **Background modes added** — `voip` (CallKit voice-only DM call) + `location` (LLS) in `target.yml` `UIBackgroundModes`.
+5. **6 customer-tested Russian translations re-applied** after upstream's translation refresh introduced different wording (звонок vs вызов, варианты vs опции, etc).
 
 ### Version 1.0.1 Build 1 Changes (2026-04-13)
 
@@ -73,25 +81,31 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 - Navy blue color overrides (24 SwiftUI + 23 UIKit tokens)
 - Test infrastructure: `PRODUCT_MODULE_NAME`, `TEST_HOST` fixes
 
-### Remaining Blockers
+### Remaining Blockers / Next Steps
 
-1. **Screenshots** — customer needs to provide screenshots (6.5" iPhone + 13" iPad) — expected in coming days
-2. **AGPL v3 licensing** — need written confirmation (expected after upcoming call). Then add source code link in app.
-3. **CallKit** — DEFERRED to next sprint. Element Call widget not sending `m.rtc.notification` events. App-side code is ready. Requires Element Call update.
+1. **TestFlight processing** — 1.0.2 build 1 uploaded 2026-05-11, awaiting Apple processing. Customer test on device once available.
+2. **Customer ops deploy AASA** — for Universal Links to activate end-to-end on the new TestFlight build, customer must deploy `apple-app-site-association` + `assetlinks.json` at `https://ucmatrix.org/.well-known/`. Package ready at `~/Desktop/universal-links-deploy.zip` (or `documentation/universal-links-deploy/`). **Don't install 1.0.2 on a real device until AASA is live** — iOS caches "no AASA" for 24h.
+3. **Android dev: post-Play SHA-256** — current `assetlinks.json` has Android debug fingerprint. Android dev to send Play App Signing certificate SHA-256 after Google Play publication; ops re-deploys.
+4. **Triage ~36 unknown test failures** from the post-sync test gauntlet (1016 tests / 67 unique failures; ~13 traceable to UCMeet customizations, ~18 Swift Testing async timeouts, ~36 unknown). Not blocking TestFlight but worth investigating before App Store submission.
+5. **AGPL v3 licensing** — still need written confirmation from customer.
+6. **CallKit (server-side)** — Element Call widget sending `m.rtc.notification` events. App-side has been ready; the new sync also adds voice-call CallKit support (`voip` background mode + `RtcCallIntent.audio` handling in NSE).
 
 ### Resolved Since Last Update
 
+- ~~Voice/video call menu in DM~~ — **DONE** in 2026-05-10 sync (upstream `RoomCallControlsToolbar.swift`).
+- ~~Universal Links iOS code~~ — **DONE** 2026-05-08, merged 2026-05-11 (PR #4).
+- ~~Upstream sync~~ — **DONE** 2026-05-10 to `release/26.05.0` (PR #3).
+- ~~OAuth callback regression from sync~~ — **FIXED** 2026-05-11 (commit `3939e2cc5`).
 - ~~Push E2E testing~~ — **VERIFIED** on TestFlight build (2026-03-28)
 - ~~Privacy Nutrition Labels~~ — **COMPLETED** in ASC (2026-04-03)
 - ~~Review contact details~~ — **ENTERED** in ASC (2026-04-03)
 - ~~Pricing~~ — **Set to Free** in ASC (2026-04-03)
 - ~~Privacy policy + support URLs~~ — **ENTERED** in ASC (2026-04-03)
+- ~~ucmatrix.org outgoing permalink rewrite~~ — **DONE** (2026-04-13)
 
-### Post-Launch Tasks
+### Open Items
 
-1. ~~**ucmatrix.org**~~ — **DONE** (2026-04-13). Replaced `matrix.to` → `ucmatrix.org` in 7 files: URL helper, AppRoutes (incoming parser), JoinedRoomProxy, MatrixUserShareLink, RoomMemberProxyProtocol, UserProfileScreenViewModel, ComposerToolbarViewModel, AttributedStringBuilder
-2. **CallKit** — update Element Call widget to send `m.rtc.notification` events
-3. **MapTiler** — customer decision on paid plan for static map previews
+1. **MapTiler** — customer decision on paid plan for static map previews
 
 > See `decisions_tracker.md` for all 12 tracked decisions: 9 resolved, 1 in progress, 2 deferred.
 
@@ -206,10 +220,11 @@ All docs in `documentation/` folder:
 | Hours invested | ~104h of ~120h budget |
 | Hours remaining | ~6–10h (Build 5 upload, AGPL link, submission, review response) |
 | Decisions resolved | 9/12 |
-| Unit tests | Post-sync 2026-05-10: 1016 run, 67 unique failures (~13 traceable to UCMeet customizations like ucmatrix.org permalinks, matrix.ucmeet.org homeserver, analytics nil; ~18 Swift Testing async timeouts; ~36 to triage). Baseline pre-sync: 962/899/63. |
+| Unit tests | Post-sync 2026-05-10: 1016 run, 67 unique failures (~13 traceable to UCMeet customizations like ucmatrix.org permalinks, matrix.ucmeet.org homeserver, analytics nil; ~18 Swift Testing async timeouts; ~36 to triage). Baseline pre-sync: 962/899/63. AppRouteURLParserTests: all 16 ✅. |
+| Build | 1.0.2 (build 1) on TestFlight 2026-05-11. Live App Store version: 1.0.1. |
 | User-visible Element branding | **0** |
 | Upstream divergence | 0 ahead, 0 behind `release/26.05.0` (synced 2026-05-10). Branch `chore/upstream-sync-2026-05` ahead of `develop` by the 2 sync commits until merged. |
 
 ---
 
-*Last updated: 2026-05-11. See `documentation/progress_log.md` for detailed daily log.*
+*Last updated: 2026-05-11 (TestFlight 1.0.2 build 1). See `documentation/progress_log.md` for detailed daily log.*

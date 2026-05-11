@@ -1,11 +1,13 @@
 # Upstream Sync Plan — May 2026 (target: `release/26.05.0`)
 
-> **Status:** Plan only. No work executed yet. Awaiting decisions on §"Open questions for the user" before kick-off.
+> **Status:** ✅ EXECUTED 2026-05-10/11. Sync merged to `develop` via PR #3, then Universal Links work via PR #4. Live in TestFlight as 1.0.2 build 1. See `documentation/progress_log.md` entries for 2026-05-10 and 2026-05-11 for the execution log.
 >
 > **Author:** iOS team (Saidakhror) with planning support.
-> **Date prepared:** 2026-05-10.
-> **Last upstream sync:** 2026-03-17 (13 commits, SDK to 26.03.10).
-> **This sync target:** upstream `release/26.05.0` (May 2026).
+> **Date prepared:** 2026-05-10. Executed 2026-05-10 to 2026-05-11.
+> **Last upstream sync (previous):** 2026-03-17 (13 commits, SDK to 26.03.10).
+> **This sync target:** upstream `release/26.05.0` (May 2026), achieved.
+>
+> The plan below is preserved as a reference for future syncs.
 
 ---
 

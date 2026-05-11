@@ -21,8 +21,8 @@ iOS code is **complete and pushed** to `origin/feature/universal-links-ucmatrix`
 
 | Track | Status |
 |---|---|
-| iOS code (entitlement, modifier, tests, docs) | ✅ Done — 5 commits on `feature/universal-links-ucmatrix` |
-| Push to origin | ✅ Done — branch tracked at `origin/feature/universal-links-ucmatrix` |
+| iOS code (entitlement, modifier, tests, docs) | ✅ Done — merged to `develop` 2026-05-11 via PR #4 |
+| Push to origin | ✅ Done |
 | Russian-language implementation plan | ✅ Done — `documentation/deeplink-univeral-link.md` |
 | Deploy bundle for customer ops | ✅ Done — `documentation/universal-links-deploy/` (5 files) |
 | Zip bundle for delivery | ✅ Done — `~/Desktop/universal-links-deploy.zip` |
@@ -30,9 +30,10 @@ iOS code is **complete and pushed** to `origin/feature/universal-links-ucmatrix`
 | Android dev replies with package + SHA-256 | ✅ Received 2026-05-08 (DEBUG fingerprint) |
 | `assetlinks.json` filled with real values | ✅ Done (DEBUG-only, see §"Android post-Play follow-up") |
 | Customer ops deploys AASA + assetlinks | 🟢 Ready to send — `~/Desktop/universal-links-deploy.zip` |
-| New TestFlight build with new entitlement | 🟡 Ready to upload, hold device install until AASA live |
-| End-to-end test (tap link → app opens room) | ⏳ Blocked on AASA being live |
-| PR `feature/universal-links-ucmatrix` → `develop` | ⏳ Hold until E2E verified |
+| TestFlight build with new entitlement | ✅ **1.0.2 build 1 uploaded 2026-05-11** (Apple processing) |
+| Install TestFlight build on test device | ⏳ **HOLD** — install only after customer ops confirms AASA is live (24h iOS no-AASA cache trap) |
+| End-to-end test (tap link → app opens room) | ⏳ Blocked on AASA being live + TestFlight install |
+| PR `feature/universal-links-ucmatrix` → `develop` | ✅ Merged 2026-05-11 (PR #4) |
 
 ---
 
