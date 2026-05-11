@@ -259,12 +259,17 @@ final class AppSettings {
     /// Universal Link approach because we don't host an AASA at our website yet.
     private(set) var oAuthRedirectURL: URL! = URL(string: "org.ucmeet.UCMeetChat:/callback")
 
+    /// All OAuth metadata URIs must be on the same host as the redirect scheme implies via reverse-DNS (MAS native-app policy, RFC 8252).
+    /// Our redirect scheme `org.ucmeet.UCMeetChat` reverse-maps to `org.ucmeet.UCMeetChat`, which is a subdomain of `org.ucmeet`,
+    /// so `clientURI: https://ucmeet.org` is what MAS accepts. Do NOT switch these to `websiteURL` (`https://www.ucmeet.info`)
+    /// — its reverse-DNS (`info.ucmeet.www`) doesn't include our scheme as a subdomain, and MAS rejects client registration with
+    /// `invalid_redirect_uri`. (Regression introduced in the 2026-05-10 sync, fixed 2026-05-11.)
     private(set) lazy var oAuthConfiguration = OAuthConfiguration(clientName: InfoPlistReader.main.bundleDisplayName,
                                                                   redirectURI: oAuthRedirectURL,
-                                                                  clientURI: websiteURL,
-                                                                  logoURI: logoURL,
-                                                                  tosURI: acceptableUseURL,
-                                                                  policyURI: privacyURL,
+                                                                  clientURI: URL(string: "https://ucmeet.org")!,
+                                                                  logoURI: URL(string: "https://ucmeet.org/favicon.png")!,
+                                                                  tosURI: URL(string: "https://ucmeet.org/terms")!,
+                                                                  policyURI: URL(string: "https://ucmeet.org/privacy")!,
                                                                   staticRegistrations: oAuthStaticRegistrations.mapKeys { $0.absoluteString })
     
     /// Whether or not the Create Account button is shown on the start screen.
