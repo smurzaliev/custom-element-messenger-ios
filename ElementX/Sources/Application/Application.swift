@@ -50,6 +50,14 @@ struct Application: App {
                     // but calls from Recents still send it ¯\_(ツ)_/¯
                     appCoordinator.handleUserActivity(userActivity)
                 }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                    guard let url = userActivity.webpageURL else {
+                        MXLog.warning("Received BrowsingWeb activity with no webpageURL")
+                        return
+                    }
+                    MXLog.info("Universal Link received: \(url)")
+                    openURL(url, isExternalURL: true)
+                }
                 .task {
                     appCoordinator.start()
                     appCoordinator.windowManager.configure(withOpenWindowAction: openWindow,

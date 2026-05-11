@@ -117,7 +117,8 @@ targets:
       path: ElementX.entitlements
       properties:
         aps-environment: development
-        # Associated domains: Element domains removed (UCMeet fork). applinks:ucmatrix.org will be added via the universal-links-ucmatrix branch (see documentation/universal_links_status.md).
+        com.apple.developer.associated-domains:
+        - applinks:ucmatrix.org
         com.apple.developer.usernotifications.communication: true
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:

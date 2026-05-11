@@ -112,4 +112,101 @@ struct AppRouteURLParserTests {
 
         #expect(route == .room(roomID: id, via: []))
     }
+
+    // MARK: - Additional ucmatrix.org permalink shapes
+
+    @Test
+    func ucMatrixRoomAliasURL() throws {
+        // Room aliases use URL-encoded `%23` for the `#` prefix.
+        let alias = "#general:matrix.org"
+        let url = try #require(URL(string: "https://ucmatrix.org/#/%23general:matrix.org"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == .roomAlias(alias))
+    }
+
+    @Test
+    func ucMatrixEventOnRoomURL() throws {
+        let roomID = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
+        let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(roomID)/\(eventID)"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == .event(eventID: eventID, roomID: roomID, via: []))
+    }
+
+    @Test
+    func ucMatrixEventOnRoomAliasURL() throws {
+        // Event-on-alias canonical form keeps `#` literal (matches SDK PermalinkTests:50-53).
+        let alias = "#general:matrix.org"
+        let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
+        let url = try #require(URL(string: "https://ucmatrix.org/#/#general:matrix.org/\(eventID)"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == .eventOnRoomAlias(eventID: eventID, alias: alias))
+    }
+
+    @Test
+    func ucMatrixRoomURLWithViaParameters() throws {
+        let id = "!roomidentifier:matrix.org"
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(id)?via=server1.org&via=server2.org"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == .room(roomID: id, via: ["server1.org", "server2.org"]))
+    }
+
+    // MARK: - Round-trip symmetry: outgoing URL.replacingMatrixToHost() ↔ inbound parser
+    // Locks in the contract that any matrix.to permalink we rewrite for sharing
+    // (URL.swift:replacingMatrixToHost) parses back to the same AppRoute when an
+    // incoming Universal Link delivers it. If these two paths ever drift,
+    // share-link round-trips silently break.
+
+    @Test
+    func roundTripRoomURL() throws {
+        let roomID = "!abcdef:matrix.org"
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(roomID)"))
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .room(roomID: roomID, via: []))
+    }
+
+    @Test
+    func roundTripUserURL() throws {
+        let userID = "@alice:matrix.org"
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(userID)"))
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .userProfile(userID: userID))
+    }
+
+    @Test
+    func roundTripRoomAliasURL() throws {
+        let alias = "#general:matrix.org"
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/%23general:matrix.org"))
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .roomAlias(alias))
+    }
+
+    @Test
+    func roundTripEventOnRoomURL() throws {
+        let roomID = "!abcdef:matrix.org"
+        let eventID = "$xyz123"
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(roomID)/\(eventID)?via=server.org"))
+
+        let ucmatrixURL = matrixToURL.replacingMatrixToHost()
+
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .event(eventID: eventID, roomID: roomID, via: ["server.org"]))
+    }
 }
