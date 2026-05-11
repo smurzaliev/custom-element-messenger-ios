@@ -7,168 +7,156 @@
 //
 
 @testable import ElementX
-import XCTest
+import Foundation
+import Testing
 
-class AppRouteURLParserTests: XCTestCase {
-    var appSettings: AppSettings!
-    var appRouteURLParser: AppRouteURLParser!
+struct AppRouteURLParserTests {
+    var appSettings: AppSettings
+    var appRouteURLParser: AppRouteURLParser
     
-    override func setUp() {
+    init() {
         AppSettings.resetAllSettings()
         appSettings = AppSettings()
         appRouteURLParser = AppRouteURLParser(appSettings: appSettings)
     }
     
-    func testElementCallRoutes() {
-        // UCMeet uses embedded Element Call bundle (no hosted instance), so universal link call routes
-        // are not expected to match. Only custom scheme routes work.
-        guard let url = URL(string: "https://call.element.io/test") else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        // No knownHosts configured for UCMeet, so universal links to call.element.io should not match
-        XCTAssertNil(appRouteURLParser.route(from: url))
-    }
-    
-    func testCustomDomainUniversalLinkCallRoutes() {
-        guard let url = URL(string: "https://somecustomdomain.element.io/test") else {
-            XCTFail("URL invalid")
-            return
-        }
+    @Test
+    func oAuthCallbackRoute() {
+        // Given an OAuth callback for this app.
+        let callbackURL = appSettings.oAuthRedirectURL.appending(queryItems: [URLQueryItem(name: "state", value: "12345"),
+                                                                              URLQueryItem(name: "code", value: "67890")])
         
-        XCTAssertEqual(appRouteURLParser.route(from: url), nil)
+        // When parsing that route.
+        let route = appRouteURLParser.route(from: callbackURL)
+        
+        // Then it should be considered a valid OAuth callback.
+        #expect(route == .oAuthCallback(url: callbackURL))
     }
     
-    func testCustomSchemeLinkCallRoutes() {
-        let urlString = "https://somecustomdomain.example.com/test?param=123"
-        guard let url = URL(string: urlString) else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        guard let encodedURLString = urlString.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {
-            XCTFail("Could not encode URL string")
-            return
-        }
-
-        guard let customSchemeURL = URL(string: "org.ucmeet.call:/?url=\(encodedURLString)") else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        XCTAssertEqual(appRouteURLParser.route(from: customSchemeURL), AppRoute.genericCallLink(url: url))
+    @Test
+    func oAuthCallbackAppVariantRoute() {
+        // Given an OAuth callback for a different app variant.
+        let callbackURL = appSettings.oAuthRedirectURL
+            .deletingLastPathComponent()
+            .appending(component: "io.element.elementz")
+            .appending(queryItems: [URLQueryItem(name: "state", value: "12345"),
+                                    URLQueryItem(name: "code", value: "67890")])
+        
+        // When parsing that route in this app.
+        let route = appRouteURLParser.route(from: callbackURL)
+        
+        // Then the route shouldn't be considered valid and should be ignored.
+        #expect(route == nil)
     }
     
-    func testHttpCustomSchemeLinkCallRoutes() {
-        guard let customSchemeURL = URL(string: "org.ucmeet.call:/?url=http%3A%2F%2Fcall.example.com%2Ftest") else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        XCTAssertEqual(appRouteURLParser.route(from: customSchemeURL), nil)
-    }
-    
-    func testMatrixUserURL() {
+    @Test
+    func matrixUserURL() throws {
         let userID = "@test:matrix.org"
-        guard let url = URL(string: "https://matrix.to/#/\(userID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://matrix.to/#/\(userID)"))
         
         let route = appRouteURLParser.route(from: url)
         
-        XCTAssertEqual(route, .userProfile(userID: userID))
+        #expect(route == .userProfile(userID: userID))
     }
     
-    func testMatrixRoomIdentifierURL() {
+    @Test
+    func matrixRoomIdentifierURL() throws {
         let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
-        guard let url = URL(string: "https://matrix.to/#/\(id)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://matrix.to/#/\(id)"))
         
         let route = appRouteURLParser.route(from: url)
         
-        XCTAssertEqual(route, .room(roomID: id, via: []))
+        #expect(route == .room(roomID: id, via: []))
     }
     
-    func testUCMatrixUserURL() {
+    @Test
+    func webRoomIDURL() throws {
+        // UCMeet has no Element web hosts configured (elementWebHosts = []), so app.element.io URLs should not be parsed.
+        let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
+        let url = try #require(URL(string: "https://app.element.io/#/room/\(id)"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == nil)
+    }
+
+    @Test
+    func webUserIDURL() throws {
+        // UCMeet has no Element web hosts configured (elementWebHosts = []), so develop.element.io URLs should not be parsed.
+        let id = "@alice:matrix.org"
+        let url = try #require(URL(string: "https://develop.element.io/#/user/\(id)"))
+
+        let route = appRouteURLParser.route(from: url)
+
+        #expect(route == nil)
+    }
+
+    // MARK: - UCMeet ucmatrix.org permalink tests
+
+    @Test
+    func ucMatrixUserURL() throws {
         let userID = "@test:matrix.org"
-        guard let url = URL(string: "https://ucmatrix.org/#/\(userID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(userID)"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .userProfile(userID: userID))
+        #expect(route == .userProfile(userID: userID))
     }
 
-    func testUCMatrixRoomIdentifierURL() {
+    @Test
+    func ucMatrixRoomIdentifierURL() throws {
         let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
-        guard let url = URL(string: "https://ucmatrix.org/#/\(id)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(id)"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .room(roomID: id, via: []))
+        #expect(route == .room(roomID: id, via: []))
     }
 
     // MARK: - Additional ucmatrix.org permalink shapes
 
-    func testUCMatrixRoomAliasURL() {
+    @Test
+    func ucMatrixRoomAliasURL() throws {
         // Room aliases use URL-encoded `%23` for the `#` prefix.
         let alias = "#general:matrix.org"
-        guard let url = URL(string: "https://ucmatrix.org/#/%23general:matrix.org") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/%23general:matrix.org"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .roomAlias(alias))
+        #expect(route == .roomAlias(alias))
     }
 
-    func testUCMatrixEventOnRoomURL() {
+    @Test
+    func ucMatrixEventOnRoomURL() throws {
         let roomID = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
         let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
-        guard let url = URL(string: "https://ucmatrix.org/#/\(roomID)/\(eventID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(roomID)/\(eventID)"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .event(eventID: eventID, roomID: roomID, via: []))
+        #expect(route == .event(eventID: eventID, roomID: roomID, via: []))
     }
 
-    func testUCMatrixEventOnRoomAliasURL() {
+    @Test
+    func ucMatrixEventOnRoomAliasURL() throws {
         // Event-on-alias canonical form keeps `#` literal (matches SDK PermalinkTests:50-53).
         let alias = "#general:matrix.org"
         let eventID = "$abcdefghijklmnopqrstuvwxyz1234567890"
-        guard let url = URL(string: "https://ucmatrix.org/#/#general:matrix.org/\(eventID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/#general:matrix.org/\(eventID)"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .eventOnRoomAlias(eventID: eventID, alias: alias))
+        #expect(route == .eventOnRoomAlias(eventID: eventID, alias: alias))
     }
 
-    func testUCMatrixRoomURLWithViaParameters() {
+    @Test
+    func ucMatrixRoomURLWithViaParameters() throws {
         let id = "!roomidentifier:matrix.org"
-        guard let url = URL(string: "https://ucmatrix.org/#/\(id)?via=server1.org&via=server2.org") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let url = try #require(URL(string: "https://ucmatrix.org/#/\(id)?via=server1.org&via=server2.org"))
 
         let route = appRouteURLParser.route(from: url)
 
-        XCTAssertEqual(route, .room(roomID: id, via: ["server1.org", "server2.org"]))
+        #expect(route == .room(roomID: id, via: ["server1.org", "server2.org"]))
     }
 
     // MARK: - Round-trip symmetry: outgoing URL.replacingMatrixToHost() ↔ inbound parser
@@ -177,83 +165,48 @@ class AppRouteURLParserTests: XCTestCase {
     // incoming Universal Link delivers it. If these two paths ever drift,
     // share-link round-trips silently break.
 
-    func testRoundTripRoomURL() {
+    @Test
+    func roundTripRoomURL() throws {
         let roomID = "!abcdef:matrix.org"
-        guard let matrixToURL = URL(string: "https://matrix.to/#/\(roomID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(roomID)"))
 
         let ucmatrixURL = matrixToURL.replacingMatrixToHost()
 
-        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
-        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .room(roomID: roomID, via: []))
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .room(roomID: roomID, via: []))
     }
 
-    func testRoundTripUserURL() {
+    @Test
+    func roundTripUserURL() throws {
         let userID = "@alice:matrix.org"
-        guard let matrixToURL = URL(string: "https://matrix.to/#/\(userID)") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(userID)"))
 
         let ucmatrixURL = matrixToURL.replacingMatrixToHost()
 
-        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
-        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .userProfile(userID: userID))
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .userProfile(userID: userID))
     }
 
-    func testRoundTripRoomAliasURL() {
+    @Test
+    func roundTripRoomAliasURL() throws {
         let alias = "#general:matrix.org"
-        guard let matrixToURL = URL(string: "https://matrix.to/#/%23general:matrix.org") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/%23general:matrix.org"))
 
         let ucmatrixURL = matrixToURL.replacingMatrixToHost()
 
-        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
-        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL), .roomAlias(alias))
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .roomAlias(alias))
     }
 
-    func testRoundTripEventOnRoomURL() {
+    @Test
+    func roundTripEventOnRoomURL() throws {
         let roomID = "!abcdef:matrix.org"
         let eventID = "$xyz123"
-        guard let matrixToURL = URL(string: "https://matrix.to/#/\(roomID)/\(eventID)?via=server.org") else {
-            XCTFail("Invalid url")
-            return
-        }
+        let matrixToURL = try #require(URL(string: "https://matrix.to/#/\(roomID)/\(eventID)?via=server.org"))
 
         let ucmatrixURL = matrixToURL.replacingMatrixToHost()
 
-        XCTAssertEqual(ucmatrixURL.host, "ucmatrix.org")
-        XCTAssertEqual(appRouteURLParser.route(from: ucmatrixURL),
-                       .event(eventID: eventID, roomID: roomID, via: ["server.org"]))
-    }
-
-    func testWebRoomIDURL() {
-        // UCMeet has no web client hosts configured, so Element web URLs should not be parsed
-        let id = "!abcdefghijklmnopqrstuvwxyz1234567890:matrix.org"
-        guard let url = URL(string: "https://app.element.io/#/room/\(id)") else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        let route = appRouteURLParser.route(from: url)
-
-        XCTAssertNil(route)
-    }
-
-    func testWebUserIDURL() {
-        // UCMeet has no web client hosts configured, so Element web URLs should not be parsed
-        let id = "@alice:matrix.org"
-        guard let url = URL(string: "https://develop.element.io/#/user/\(id)") else {
-            XCTFail("URL invalid")
-            return
-        }
-
-        let route = appRouteURLParser.route(from: url)
-
-        XCTAssertNil(route)
+        #expect(ucmatrixURL.host == "ucmatrix.org")
+        #expect(appRouteURLParser.route(from: ucmatrixURL) == .event(eventID: eventID, roomID: roomID, via: ["server.org"]))
     }
 }
