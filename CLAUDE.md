@@ -51,7 +51,7 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 | Analytics | Disabled (PostHog, Sentry, rageshake all set to `nil`) |
 | APP_NAME | `UCMeet.Chat` (was `ElementX` — fixed OIDC system dialog) |
 | Permalinks | `ucmatrix.org` (replaced `matrix.to` — blocked in Russia). Outgoing links, mentions, share URLs all use `ucmatrix.org`. Incoming `ucmatrix.org` links parsed via `UCMatrixPermalinkParser` |
-| Universal Links | `applinks:ucmatrix.org` in entitlements. `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` routes `https://ucmatrix.org/...` URLs through `AppCoordinator.handleDeepLink`. Requires AASA file at `https://ucmatrix.org/.well-known/apple-app-site-association` (customer-hosted) |
+| Universal Links | `applinks:ucmatrix.org` in entitlements. `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` routes `https://ucmatrix.org/...` URLs through `AppCoordinator.handleDeepLink`. **AASA + assetlinks.json deployed 2026-05-12** at `https://ucmatrix.org/.well-known/` (nginx 1.24.0, HTTP 200, `application/json`). Ready for E2E test on TestFlight 1.0.2. |
 | Upstream | Synced with `element-hq/element-x-ios:release/26.05.0` 2026-05-10 (3 ahead of release tag, 0 behind) |
 
 ### Version 1.0.2 Build 1 Changes (2026-05-11) — currently in TestFlight
@@ -83,15 +83,16 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 
 ### Remaining Blockers / Next Steps
 
-1. **TestFlight processing** — 1.0.2 build 1 uploaded 2026-05-11, awaiting Apple processing. Customer test on device once available.
-2. **Customer ops deploy AASA** — for Universal Links to activate end-to-end on the new TestFlight build, customer must deploy `apple-app-site-association` + `assetlinks.json` at `https://ucmatrix.org/.well-known/`. Package ready at `~/Desktop/universal-links-deploy.zip` (or `documentation/universal-links-deploy/`). **Don't install 1.0.2 on a real device until AASA is live** — iOS caches "no AASA" for 24h.
-3. **Android dev: post-Play SHA-256** — current `assetlinks.json` has Android debug fingerprint. Android dev to send Play App Signing certificate SHA-256 after Google Play publication; ops re-deploys.
+1. **Universal Links E2E test** — install 1.0.2 build 1 from TestFlight on a real device (AASA is live as of 2026-05-12, so install is now safe), tap a `https://ucmatrix.org/#/room/...` link from Telegram/Mail, confirm app opens to that room.
+2. **TestFlight customer test** — customer tests new build (voice/video DM call menu, branding, Russian translations).
+3. **Android dev: post-Play SHA-256** — current `assetlinks.json` has Android DEBUG fingerprint. Android dev to send Play App Signing certificate SHA-256 after Google Play publication; customer ops re-deploys.
 4. **Triage ~36 unknown test failures** from the post-sync test gauntlet (1016 tests / 67 unique failures; ~13 traceable to UCMeet customizations, ~18 Swift Testing async timeouts, ~36 unknown). Not blocking TestFlight but worth investigating before App Store submission.
 5. **AGPL v3 licensing** — still need written confirmation from customer.
 6. **CallKit (server-side)** — Element Call widget sending `m.rtc.notification` events. App-side has been ready; the new sync also adds voice-call CallKit support (`voip` background mode + `RtcCallIntent.audio` handling in NSE).
 
 ### Resolved Since Last Update
 
+- ~~Universal Links AASA + assetlinks deploy~~ — **DONE 2026-05-12** by customer ops. Both files at `https://ucmatrix.org/.well-known/`, verified via `verify.sh` and independent `curl` check.
 - ~~Voice/video call menu in DM~~ — **DONE** in 2026-05-10 sync (upstream `RoomCallControlsToolbar.swift`).
 - ~~Universal Links iOS code~~ — **DONE** 2026-05-08, merged 2026-05-11 (PR #4).
 - ~~Upstream sync~~ — **DONE** 2026-05-10 to `release/26.05.0` (PR #3).

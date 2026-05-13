@@ -29,10 +29,10 @@ iOS code is **complete and pushed** to `origin/feature/universal-links-ucmatrix`
 | Russian message to Android dev | ✅ Sent |
 | Android dev replies with package + SHA-256 | ✅ Received 2026-05-08 (DEBUG fingerprint) |
 | `assetlinks.json` filled with real values | ✅ Done (DEBUG-only, see §"Android post-Play follow-up") |
-| Customer ops deploys AASA + assetlinks | 🟢 Ready to send — `~/Desktop/universal-links-deploy.zip` |
+| Customer ops deploys AASA + assetlinks | ✅ **DONE 2026-05-12.** Both files at `https://ucmatrix.org/.well-known/`, served by nginx 1.24.0, HTTP/2 200, `Content-Type: application/json`, no redirects. AASA contains `appIDs: ["6HRG779SDK.org.ucmeet.UCMeetChat"]` + path matcher `"/": "/*"`. assetlinks contains `package_name: "org.ucmeet.chat"` + DEBUG SHA-256. `verify.sh` ran by customer ops with all checks passing; independently re-verified via `curl` 2026-05-13. |
 | TestFlight build with new entitlement | ✅ **1.0.2 build 1 uploaded 2026-05-11** (Apple processing) |
-| Install TestFlight build on test device | ⏳ **HOLD** — install only after customer ops confirms AASA is live (24h iOS no-AASA cache trap) |
-| End-to-end test (tap link → app opens room) | ⏳ Blocked on AASA being live + TestFlight install |
+| Install TestFlight build on test device | 🟢 **READY** — AASA is now live, safe to install. |
+| End-to-end test (tap link → app opens room) | 🟢 **UNBLOCKED** — pending TestFlight install + tap test from another app (Telegram, Notes, Mail) |
 | PR `feature/universal-links-ucmatrix` → `develop` | ✅ Merged 2026-05-11 (PR #4) |
 
 ---
