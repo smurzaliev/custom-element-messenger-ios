@@ -796,12 +796,44 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
             .store(in: &cancellables)
         
         userSessionFlowCoordinator.start()
-        
+
         self.userSessionFlowCoordinator = userSessionFlowCoordinator
-        
+
+        // Keep the home-screen badge in sync with the actual unread-notifications total.
+        // Without this, the badge value set by the NSE from a push payload never decrements when
+        // the user reads messages in-app — see `observeBadgeCount()` for details.
+        observeBadgeCount()
+
         Task {
             await runPostSessionSetupTasks()
         }
+    }
+
+    /// Subscribes to the user's room-summary publisher and writes the sum of `unreadNotificationsCount`
+    /// across all rooms to the app's home-screen badge whenever summaries change.
+    ///
+    /// Without this, the badge is only ever set by the NSE (`NSE/Sources/NotificationHandler.swift`)
+    /// when a new push arrives, and cleared to 0 on logout (see `signOut`). Reading a message in-app
+    /// updates the server-side unread count, but nothing in the app pushed that change back to the
+    /// iOS badge — so the badge would stay at the last NSE-written value (typically "1") indefinitely.
+    /// Customer-reported bug, 2026-05-17. Same misbehavior is observable in upstream Element X on
+    /// matrix.org.
+    private func observeBadgeCount() {
+        guard let userSession else { return }
+
+        userSession.clientProxy.roomSummaryProvider.roomListPublisher
+            .map { summaries -> Int in
+                summaries.reduce(0) { $0 + Int($1.unreadNotificationsCount) }
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] count in
+                // Don't fight the user's own "notifications off" setting.
+                guard self?.appSettings.enableNotifications == true else { return }
+                MXLog.info("Recomputed badge count from room summaries: \(count)")
+                UNUserNotificationCenter.current().setBadgeCount(count)
+            }
+            .store(in: &cancellables)
     }
         
     private func logout(isSoft: Bool) {
