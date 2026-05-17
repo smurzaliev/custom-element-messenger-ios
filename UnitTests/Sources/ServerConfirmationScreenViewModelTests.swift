@@ -223,8 +223,10 @@ final class ServerConfirmationScreenViewModelTests {
         
         // Then the configuration should fail with an alert telling the user to download Element Pro.
         #expect(clientFactory.makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount == 1)
-        // UCMeet: serverName comes from appSettings.accountProviders.first (matrix.ucmeet.org for us, not matrix.org).
-        #expect(context.alertInfo?.id == .elementProRequired(serverName: appSettings.accountProviders.first ?? "matrix.org"))
+        // Note: serverName in the alertInfo comes from upstream's hardcoded "matrix.org"
+        // reference (production code path that constructs the alert), NOT from our
+        // configured account provider. Leave as "matrix.org" to match production behaviour.
+        #expect(context.alertInfo?.id == .elementProRequired(serverName: "matrix.org"))
     }
     
     // MARK: - Picker mode
