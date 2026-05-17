@@ -209,7 +209,7 @@
 "common_blocked_users" = "Заблокированные пользователи";
 "common_bubbles" = "Пузыри";
 "common_call_declined" = "Call declined";
-"common_call_started" = "Звонок начат";
+"common_call_started" = "Звонок";
 "common_call_you_declined" = "You declined a call";
 "common_chat_backup" = "Резервная копия чатов";
 "common_copied_to_clipboard" = "Скопировано в буфер обмена";
