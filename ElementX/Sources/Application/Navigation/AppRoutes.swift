@@ -156,7 +156,6 @@ private struct UCMatrixPermalinkParser: URLParser {
     }
 }
 
-
 private struct MatrixPermalinkParser: URLParser {
     func route(from url: URL) -> AppRoute? {
         guard let entity = parseMatrixEntityFrom(uri: url.absoluteString) else { return nil }

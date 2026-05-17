@@ -160,6 +160,7 @@ struct AppRouteURLParserTests {
     }
 
     // MARK: - Round-trip symmetry: outgoing URL.replacingMatrixToHost() ↔ inbound parser
+
     // Locks in the contract that any matrix.to permalink we rewrite for sharing
     // (URL.swift:replacingMatrixToHost) parses back to the same AppRoute when an
     // incoming Universal Link delivers it. If these two paths ever drift,
