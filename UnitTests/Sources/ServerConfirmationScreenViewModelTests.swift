@@ -223,7 +223,8 @@ final class ServerConfirmationScreenViewModelTests {
         
         // Then the configuration should fail with an alert telling the user to download Element Pro.
         #expect(clientFactory.makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount == 1)
-        #expect(context.alertInfo?.id == .elementProRequired(serverName: "matrix.org"))
+        // UCMeet: serverName comes from appSettings.accountProviders.first (matrix.ucmeet.org for us, not matrix.org).
+        #expect(context.alertInfo?.id == .elementProRequired(serverName: appSettings.accountProviders.first ?? "matrix.org"))
     }
     
     // MARK: - Picker mode
@@ -324,7 +325,12 @@ final class ServerConfirmationScreenViewModelTests {
                                 supportsPasswordLogin: Bool = true,
                                 restrictedFlow: Bool = false,
                                 requiresElementPro: Bool = false) {
-        var mode = ServerConfirmationScreenMode.confirmation("matrix.org")
+        // UCMeet: use the configured default account provider (matrix.ucmeet.org for us)
+        // instead of upstream's hardcoded "matrix.org". Keeps the test fixture in sync with
+        // whatever `appSettings.accountProviders.first` is, so the assertions that compare
+        // against `service.homeserver.value.address` match regardless of fork-specific defaults.
+        let defaultHomeserver = appSettings.accountProviders.first ?? "matrix.org"
+        var mode = ServerConfirmationScreenMode.confirmation(defaultHomeserver)
         if restrictedFlow {
             appSettings.override(accountProviders: ["matrix.org", "beta.matrix.org"],
                                  allowOtherAccountProviders: false,
@@ -354,7 +360,10 @@ final class ServerConfirmationScreenViewModelTests {
                                                     supportsOAuthCreatePrompt: supportsOAuthCreatePrompt,
                                                     supportsPasswordLogin: supportsPasswordLogin,
                                                     elementWellKnown: requiresElementPro ? "{\"version\":1,\"enforce_element_pro\":true}" : nil))
-        let configuration = AuthenticationClientFactoryMock.Configuration(homeserverClients: ["matrix.org": client])
+        // UCMeet: key the mock by the configured default homeserver (matrix.ucmeet.org for us,
+        // matrix.org for restricted-flow tests after their override).
+        let mockHomeserver = appSettings.accountProviders.first ?? "matrix.org"
+        let configuration = AuthenticationClientFactoryMock.Configuration(homeserverClients: [mockHomeserver: client])
         
         clientFactory = AuthenticationClientFactoryMock(configuration: configuration)
         service = AuthenticationService(userSessionStore: UserSessionStoreMock(configuration: .init()),

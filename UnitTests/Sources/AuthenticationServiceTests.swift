@@ -75,7 +75,9 @@ struct AuthenticationServiceTests {
         }
         
         #expect(service.flow == .login)
-        #expect(service.homeserver.value == .init(address: "matrix.org", loginMode: .unknown))
+        // UCMeet: appSettings.accountProviders is ["matrix.ucmeet.org"], so the default
+        // homeserver address resets to ours instead of upstream's "matrix.org".
+        #expect(service.homeserver.value == .init(address: "matrix.ucmeet.org", loginMode: .unknown))
     }
     
     @Test

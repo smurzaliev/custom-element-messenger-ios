@@ -17,9 +17,13 @@ struct ServerConfirmationScreenViewStateTests {
                                                                   authenticationFlow: .login)
         #expect(matrixDotOrgLogin.message == L10n.screenServerConfirmationMessageLoginMatrixDotOrg, "matrix.org should have a custom message.")
         
+        // UCMeet: the element.io-specific message case was removed in production code
+        // (ServerConfirmationScreenModels.swift "UCMeet: removed element.io special-case
+        // message — users will not connect to element.io"). element.io now returns empty
+        // like any other non-matrix.org host.
         let elementDotIoLogin = ServerConfirmationScreenViewState(mode: .confirmation("element.io"),
                                                                   authenticationFlow: .login)
-        #expect(elementDotIoLogin.message == L10n.screenServerConfirmationMessageLoginElementDotIo, "element.io should have a custom message.")
+        #expect(elementDotIoLogin.message == "", "UCMeet removed the element.io custom message; non-matrix.org hosts return empty.")
         
         let otherLogin = ServerConfirmationScreenViewState(mode: .confirmation(LoginHomeserver.mockOAuth.address),
                                                            authenticationFlow: .login)
