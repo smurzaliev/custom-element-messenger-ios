@@ -123,7 +123,7 @@ final class ComposerToolbarViewModelTests {
         viewModel.context.send(viewAction: .selectedSuggestion(suggestion))
         
         // The display name can be used for HTML injection in the rich text editor and it's useless anyway as the clients don't use it when resolving display names
-        #expect(wysiwygViewModel.content.html == "<a href=\"https://matrix.to/#/@test:matrix.org\">@test:matrix.org</a> ")
+        #expect(wysiwygViewModel.content.html == "<a href=\"https://ucmatrix.org/#/@test:matrix.org\">@test:matrix.org</a> ")
     }
     
     @Test
@@ -139,7 +139,7 @@ final class ComposerToolbarViewModelTests {
         
         // The display name can be used for HTML injection in the rich text editor and it's useless anyway as the clients don't use it when resolving display names
         
-        #expect(wysiwygViewModel.content.html == "<a href=\"https://matrix.to/#/%23room-alias:matrix.org\">#room-alias:matrix.org</a> ")
+        #expect(wysiwygViewModel.content.html == "<a href=\"https://ucmatrix.org/#/%23room-alias:matrix.org\">#room-alias:matrix.org</a> ")
     }
     
     @Test
@@ -600,7 +600,7 @@ final class ComposerToolbarViewModelTests {
             switch action {
             case let .sendMessage(plainText, _, _, intentionalMentions):
                 // As of right now the markdown loses the display name when restored
-                return plainText == "Hello [@test:matrix.org](https://matrix.to/#/@test:matrix.org)!" &&
+                return plainText == "Hello [@test:matrix.org](https://ucmatrix.org/#/@test:matrix.org)!" &&
                     intentionalMentions == IntentionalMentions(userIDs: ["@test:matrix.org"], atRoom: false)
             default:
                 return false
@@ -641,7 +641,7 @@ final class ComposerToolbarViewModelTests {
             switch action {
             case let .sendMessage(plainText, _, _, intentionalMentions):
                 // As of right now the markdown loses the display name when restored
-                return plainText == "Hello [@user1:matrix.org](https://matrix.to/#/@user1:matrix.org), [@user2:matrix.org](https://matrix.to/#/@user2:matrix.org) and @room" &&
+                return plainText == "Hello [@user1:matrix.org](https://ucmatrix.org/#/@user1:matrix.org), [@user2:matrix.org](https://ucmatrix.org/#/@user2:matrix.org) and @room" &&
                     intentionalMentions == IntentionalMentions(userIDs: ["@user1:matrix.org", "@user2:matrix.org"], atRoom: true)
             default:
                 return false
@@ -662,7 +662,7 @@ final class ComposerToolbarViewModelTests {
             switch action {
             case let .sendMessage(plainText, _, _, intentionalMentions):
                 // As of right now the markdown loses the display name when restored
-                return plainText == "Hello [@roomuser:matrix.org](https://matrix.to/#/@roomuser:matrix.org)" &&
+                return plainText == "Hello [@roomuser:matrix.org](https://ucmatrix.org/#/@roomuser:matrix.org)" &&
                     intentionalMentions == IntentionalMentions(userIDs: ["@roomuser:matrix.org"], atRoom: false)
             default:
                 return false

@@ -182,16 +182,19 @@ struct AttributedStringBuilderTests {
     func userIDLink() throws {
         let userID = "@user:matrix.org"
         let string = "The user is \(userID)."
-        let expectedLink = "https://matrix.to/#/\(userID)"
+        // UCMeet: outgoing permalinks are rewritten to ucmatrix.org (URL.replacingMatrixToHost)
+        // since matrix.to is blocked in Russia.
+        let expectedLink = "https://ucmatrix.org/#/\(userID)"
         try checkLinkIn(attributedString: attributedStringBuilder.fromHTML(string), expectedLink: expectedLink, expectedRuns: 3)
         try checkLinkIn(attributedString: attributedStringBuilder.fromPlain(string), expectedLink: expectedLink, expectedRuns: 3)
     }
-    
+
     @Test
     func roomAliasLink() throws {
         let roomAlias = "#room:matrix.org"
         let string = "The room is \(roomAlias)."
-        let expectedLink = try #require(URL(string: "https://matrix.to/#/\(roomAlias)"), "The expected link should be valid.")
+        // UCMeet: outgoing permalinks rewritten to ucmatrix.org — see userIDLink for the why.
+        let expectedLink = try #require(URL(string: "https://ucmatrix.org/#/\(roomAlias)"), "The expected link should be valid.")
         try checkLinkIn(attributedString: attributedStringBuilder.fromHTML(string), expectedLink: expectedLink.absoluteString, expectedRuns: 3)
         try checkLinkIn(attributedString: attributedStringBuilder.fromPlain(string), expectedLink: expectedLink.absoluteString, expectedRuns: 3)
     }
@@ -373,11 +376,12 @@ struct AttributedStringBuilderTests {
         let attributedStringFromHTML = attributedStringBuilder.fromHTML(string)
         #expect(attributedStringFromHTML?.attachment != nil)
         #expect(attributedStringFromHTML?.userID == "@test:matrix.org")
-        #expect(attributedStringFromHTML?.link?.absoluteString == "https://matrix.to/#/@test:matrix.org")
+        // UCMeet: outgoing permalinks rewritten to ucmatrix.org.
+        #expect(attributedStringFromHTML?.link?.absoluteString == "https://ucmatrix.org/#/@test:matrix.org")
         let attributedStringFromPlain = attributedStringBuilder.fromPlain(string)
         #expect(attributedStringFromPlain?.attachment != nil)
         #expect(attributedStringFromPlain?.userID == "@test:matrix.org")
-        #expect(attributedStringFromPlain?.link?.absoluteString == "https://matrix.to/#/@test:matrix.org")
+        #expect(attributedStringFromPlain?.link?.absoluteString == "https://ucmatrix.org/#/@test:matrix.org")
     }
     
     @Test
@@ -412,11 +416,12 @@ struct AttributedStringBuilderTests {
         let attributedStringFromHTML = attributedStringBuilder.fromHTML(string)
         #expect(attributedStringFromHTML?.attachment != nil)
         #expect(attributedStringFromHTML?.roomAlias == "#test:matrix.org")
-        #expect(attributedStringFromHTML?.link?.absoluteString == "https://matrix.to/#/%23test:matrix.org")
+        // UCMeet: outgoing permalinks rewritten to ucmatrix.org.
+        #expect(attributedStringFromHTML?.link?.absoluteString == "https://ucmatrix.org/#/%23test:matrix.org")
         let attributedStringFromPlain = attributedStringBuilder.fromPlain(string)
         #expect(attributedStringFromPlain?.attachment != nil)
         #expect(attributedStringFromHTML?.roomAlias == "#test:matrix.org")
-        #expect(attributedStringFromPlain?.link?.absoluteString == "https://matrix.to/#/%23test:matrix.org")
+        #expect(attributedStringFromPlain?.link?.absoluteString == "https://ucmatrix.org/#/%23test:matrix.org")
     }
     
     @Test
