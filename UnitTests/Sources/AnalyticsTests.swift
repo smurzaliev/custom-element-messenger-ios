@@ -11,6 +11,15 @@ import AnalyticsEvents
 import PostHog
 import Testing
 
+// UCMeet customization: analytics are intentionally disabled in this fork.
+// `Secrets.swift` returns nil for `postHogHost`/`postHogAPIKey`, so
+// `AppSettings.analyticsConfiguration` resolves to nil and the whole
+// analytics pipeline is inert. The upstream tests assume non-nil
+// analytics config and a wired-up PostHog client — they don't apply to
+// our build. Disabling the whole suite is cleaner than updating each
+// assertion to expect "no-op behaviour"; if we ever re-enable analytics,
+// remove the .disabled trait below.
+@Suite(.disabled("UCMeet: analytics intentionally disabled (Secrets.postHogHost/postHogAPIKey are nil); re-enable when analytics is wired up"))
 final class AnalyticsTests {
     private var appSettings: AppSettings
     private var analyticsClient: AnalyticsClientMock

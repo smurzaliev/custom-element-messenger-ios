@@ -101,7 +101,7 @@ final class BugReportServiceTests {
         #expect(response.reportURL == "https://example.com/123")
     }
     
-    @Test
+    @Test(.disabled("UCMeet: rageshake is intentionally disabled (Secrets.rageshakeURL is nil), so the initial configuration is .disabled instead of .url(...)"))
     @MainActor
     func configurations() async throws {
         guard case let .url(initialURL) = appSettings.bugReportRageshakeURL.publisher.value else {
