@@ -91,12 +91,12 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 1. **Universal Links E2E test** — install 1.0.2 build 1 from TestFlight on a real device (AASA is live as of 2026-05-12, so install is now safe), tap a `https://ucmatrix.org/#/room/...` link from Telegram/Mail, confirm app opens to that room.
 2. **TestFlight customer test** — customer tests new build (voice/video DM call menu, branding, Russian translations).
 3. **Android dev: post-Play SHA-256** — current `assetlinks.json` has Android DEBUG fingerprint. Android dev to send Play App Signing certificate SHA-256 after Google Play publication; customer ops re-deploys.
-4. **Triage ~36 unknown test failures** from the post-sync test gauntlet (1016 tests / 67 unique failures; ~13 traceable to UCMeet customizations, ~18 Swift Testing async timeouts, ~36 unknown). Not blocking TestFlight but worth investigating before App Store submission.
-5. **AGPL v3 licensing** — still need written confirmation from customer.
-6. **CallKit (server-side)** — Element Call widget sending `m.rtc.notification` events. App-side has been ready; the new sync also adds voice-call CallKit support (`voip` background mode + `RtcCallIntent.audio` handling in NSE).
+4. **AGPL v3 licensing** — still need written confirmation from customer.
+5. **CallKit (server-side)** — Element Call widget sending `m.rtc.notification` events. App-side has been ready; the new sync also adds voice-call CallKit support (`voip` background mode + `RtcCallIntent.audio` handling in NSE).
 
 ### Resolved Since Last Update
 
+- ~~Post-sync test gauntlet (67 unique failures)~~ — **DONE 2026-05-17** on `chore/fix-post-sync-test-failures`. All 1024 unit tests pass. Net change: 8 commits updating test assertions for UCMeet customizations (permalinks/homeserver), disabling intentionally-irrelevant suites (analytics), forcing en/US locale, serializing one file-system-shared test suite (`VoiceMessageCacheTests`), and one production fix (mention-attachment regression from `ucmatrix.org` permalink rewrite).
 - ~~Universal Links AASA + assetlinks deploy~~ — **DONE 2026-05-12** by customer ops. Both files at `https://ucmatrix.org/.well-known/`, verified via `verify.sh` and independent `curl` check.
 - ~~Voice/video call menu in DM~~ — **DONE** in 2026-05-10 sync (upstream `RoomCallControlsToolbar.swift`).
 - ~~Universal Links iOS code~~ — **DONE** 2026-05-08, merged 2026-05-11 (PR #4).
@@ -226,7 +226,7 @@ All docs in `documentation/` folder:
 | Hours invested | ~104h of ~120h budget |
 | Hours remaining | ~6–10h (Build 5 upload, AGPL link, submission, review response) |
 | Decisions resolved | 9/12 |
-| Unit tests | Post-sync 2026-05-10: 1016 run, 67 unique failures (~13 traceable to UCMeet customizations like ucmatrix.org permalinks, matrix.ucmeet.org homeserver, analytics nil; ~18 Swift Testing async timeouts; ~36 to triage). Baseline pre-sync: 962/899/63. AppRouteURLParserTests: all 16 ✅. |
+| Unit tests | **1024 tests, 0 failures** (triaged 2026-05-17 on `chore/fix-post-sync-test-failures`). Fixes: ucmatrix.org permalink assertions, matrix.ucmeet.org homeserver assertions, AnalyticsTests suite disabled, en/US locale forced in xctestplan, VoiceMessageCacheTests `.serialized`, ServerConfirmation elementProRequired hardcoded matrix.org. Pre-triage post-sync: 1016/67 unique failures. Baseline pre-sync: 962/899/63. AppRouteURLParserTests: all 16 ✅. |
 | Build | 1.0.2 (build 1) on TestFlight 2026-05-11. **1.0.2 (build 2) ready for archive 2026-05-17** with badge-recompute fix + RU call-status translation. Live App Store version: 1.0.1. |
 | User-visible Element branding | **0** |
 | Upstream divergence | 0 ahead, 0 behind `release/26.05.0` (synced 2026-05-10). Branch `chore/upstream-sync-2026-05` ahead of `develop` by the 2 sync commits until merged. |
