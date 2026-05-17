@@ -54,7 +54,12 @@ Branded fork of **Element X iOS** (Matrix messenger, SwiftUI) → publish on App
 | Universal Links | `applinks:ucmatrix.org` in entitlements. `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` routes `https://ucmatrix.org/...` URLs through `AppCoordinator.handleDeepLink`. **AASA + assetlinks.json deployed 2026-05-12** at `https://ucmatrix.org/.well-known/` (nginx 1.24.0, HTTP 200, `application/json`). Ready for E2E test on TestFlight 1.0.2. |
 | Upstream | Synced with `element-hq/element-x-ios:release/26.05.0` 2026-05-10 (3 ahead of release tag, 0 behind) |
 
-### Version 1.0.2 Build 1 Changes (2026-05-11) — currently in TestFlight
+### Version 1.0.2 Build 2 Changes (2026-05-17) — pending upload
+
+1. **Russian translation "Звонок начат" → "Звонок"** (`common_call_started` in `ru.lproj/Localizable.strings`). Workaround for an upstream Element X bug where the call-status timeline item never updates after the call ends (same on matrix.org reference client). Customer-requested. Single string changed; English left as "Call started".
+2. **Home-screen badge auto-recompute** (`AppCoordinator.observeBadgeCount()`). Subscribes to `roomSummaryProvider.roomListPublisher` for the lifetime of the user session, reduces per-room `unreadNotificationsCount` into a total, writes to `UNUserNotificationCenter.setBadgeCount`. Fixes the customer-reported "badge stuck at (1)" bug — previously badge was only set by NSE on push and cleared on logout; in-app reads didn't decrement it.
+
+### Version 1.0.2 Build 1 Changes (2026-05-11) — uploaded to TestFlight 2026-05-11
 
 1. **Upstream sync to `release/26.05.0`** (267 commits). Customer-facing: voice/video call menu in DM rooms (the customer's "кнопка звонка" ask), Live Location Sharing graduated to permanent, multi-window iPad/Mac, iOS 26 cold-start crash fix. Internal: Matrix Rust SDK 26.03.10 → 26.05.06, OIDC → OAuth rename, Compound design tokens v7 → v10.1.1, Embedded Element Call 0.17.0 → 0.19.2, Xcode bumped to 26.4 (we run 26.4.1).
 2. **Universal Links for `ucmatrix.org`** — `applinks:ucmatrix.org` entitlement + `NSUserActivityTypeBrowsingWeb` handler in `Application.swift` + diagnostic logs in `AppCoordinator.handleDeepLink`. Tap `https://ucmatrix.org/#/room/...` opens the app once customer ops deploys AASA.
@@ -222,7 +227,7 @@ All docs in `documentation/` folder:
 | Hours remaining | ~6–10h (Build 5 upload, AGPL link, submission, review response) |
 | Decisions resolved | 9/12 |
 | Unit tests | Post-sync 2026-05-10: 1016 run, 67 unique failures (~13 traceable to UCMeet customizations like ucmatrix.org permalinks, matrix.ucmeet.org homeserver, analytics nil; ~18 Swift Testing async timeouts; ~36 to triage). Baseline pre-sync: 962/899/63. AppRouteURLParserTests: all 16 ✅. |
-| Build | 1.0.2 (build 1) on TestFlight 2026-05-11. Live App Store version: 1.0.1. |
+| Build | 1.0.2 (build 1) on TestFlight 2026-05-11. **1.0.2 (build 2) ready for archive 2026-05-17** with badge-recompute fix + RU call-status translation. Live App Store version: 1.0.1. |
 | User-visible Element branding | **0** |
 | Upstream divergence | 0 ahead, 0 behind `release/26.05.0` (synced 2026-05-10). Branch `chore/upstream-sync-2026-05` ahead of `develop` by the 2 sync commits until merged. |
 
