@@ -400,8 +400,13 @@ struct AttributedStringBuilder: AttributedStringBuilderProtocol {
     func addMatrixEntityPermalinkAttributesTo(_ attributedString: NSMutableAttributedString) {
         attributedString.enumerateAttribute(.link, in: .init(location: 0, length: attributedString.length), options: []) { value, range, _ in
             if value != nil {
+                // UCMeet: links we emit use `ucmatrix.org` (per `URL.replacingMatrixToHost`),
+                // but `parseMatrixEntityFrom(uri:)` only understands the canonical `matrix.to`
+                // host. Rewrite back for the parser call so user/room/event entities are
+                // recognised; the `.link` attribute on the attributed string keeps the
+                // user-visible `ucmatrix.org` URL untouched.
                 if let url = value as? URL,
-                   let matrixEntity = parseMatrixEntityFrom(uri: url.absoluteString) {
+                   let matrixEntity = parseMatrixEntityFrom(uri: url.replacingUCMatrixHostForSDKParsing().absoluteString) {
                     switch matrixEntity.id {
                     case .user(let userID):
                         mentionBuilder.handleUserMention(for: attributedString, in: range, url: url, userID: userID, userDisplayName: nil)

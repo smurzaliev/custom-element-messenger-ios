@@ -21,6 +21,19 @@ extension URL {
         components.host = "ucmatrix.org"
         return components.url ?? self
     }
+
+    /// Inverse of `replacingMatrixToHost()`: replaces `ucmatrix.org` with `matrix.to` so the
+    /// URL can be parsed by SDK functions that only understand the canonical `matrix.to` host
+    /// (e.g., `parseMatrixEntityFrom(uri:)`). Use this before handing a URL we generated for
+    /// the user back to the SDK for entity-recognition.
+    func replacingUCMatrixHostForSDKParsing() -> URL {
+        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false),
+              components.host == "ucmatrix.org" else {
+            return self
+        }
+        components.host = "matrix.to"
+        return components.url ?? self
+    }
 }
 
 // MARK: - Custom URLs
