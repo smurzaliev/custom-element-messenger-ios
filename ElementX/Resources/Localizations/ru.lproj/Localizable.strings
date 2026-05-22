@@ -63,7 +63,7 @@
 "action_call" = "Позвонить";
 "action_cancel" = "Отмена";
 "action_cancel_for_now" = "Пока отменить";
-"action_choose_file" = "Choose file";
+"action_choose_file" = "Выбрать файл";
 "action_choose_photo" = "Выбрать фото";
 "action_clear" = "Очистить";
 "action_close" = "Закрыть";
@@ -560,10 +560,10 @@
 "screen_advanced_settings_hide_invite_avatars_toggle_title" = "Скрывать аватары в приглашениях";
 "screen_advanced_settings_hide_timeline_media_toggle_title" = "Скрывать предпросмотр медиа в истории сообщений";
 "screen_advanced_settings_labs" = "Лаборатория";
-"screen_advanced_settings_live_location_section_description" = "The distance you have to move to trigger an update.";
-"screen_advanced_settings_live_location_section_footer" = "Make sure \"Precise Location” is enabled for this app. To change the permission go to %1$@.";
-"screen_advanced_settings_live_location_section_footer_link" = "App Settings";
-"screen_advanced_settings_live_location_section_title" = "Live location updates";
+"screen_advanced_settings_live_location_section_description" = "Расстояние, которое необходимо пройти, чтобы обновить местоположение.";
+"screen_advanced_settings_live_location_section_footer" = "Убедитесь, что для этого приложения включена «Точная геопозиция». Чтобы изменить разрешение, перейдите в %1$@.";
+"screen_advanced_settings_live_location_section_footer_link" = "Настройки приложения";
+"screen_advanced_settings_live_location_section_title" = "Обновления местоположения в реальном времени";
 "screen_advanced_settings_media_compression_description" = "Загружайте фотографии и видео быстрее и сокращайте потребление трафика";
 "screen_advanced_settings_media_compression_title" = "Оптимизировать качество мультимедиа";
 "screen_advanced_settings_moderation_and_safety_section_title" = "Модерация и безопасность";
